@@ -2,8 +2,11 @@ import java.awt.Label;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -15,6 +18,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 import javax.sql.RowSetInternal;
 import javax.swing.GroupLayout;
@@ -26,6 +32,12 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 
 public class BAMPTT extends JFrame{
@@ -54,6 +66,70 @@ public class BAMPTT extends JFrame{
 //		main1.sumSellLocal();
 //		main1.processOutput("/Users/Earther/Desktop/output.csv");
 //		System.out.println("End program");
+	}
+	
+	private void writeObjectToExcel(ArrayList<FifoRowDetail> dataList) throws InvalidFormatException, IOException{
+		//Blank workbook
+        XSSFWorkbook workbook = new XSSFWorkbook(); 
+         
+        //Create a blank sheet
+        XSSFSheet sheet = workbook.createSheet("Output Data");
+          
+        //This data needs to be written (Object[])
+        Map<Integer, Object[]> data = new TreeMap<Integer, Object[]>();
+        int idx=0;
+        DateFormat df = new SimpleDateFormat("dd/MM/yy");
+        data.put(idx++,new Object[]{"idx","Date","local_Quantity","Local_Lot","Inter_Quantity","Inter_Lot","Balance Lot"});
+        for (FifoRowDetail record : dataList) {
+			data.put(idx, new Object[]{
+				idx,
+				df.format(record.getDateRecord()),
+				record.getLocalQuantity()==-1?"":record.getLocalQuantity().toString(),
+				record.getLocalInvoiceName(),
+				record.getInterQuantity()==-1?"":record.getInterQuantity().toString(),
+				record.getInterInvoiceName(),
+				record.getInvoiceBalance().toString()
+			});
+			idx++;
+		}
+//        data.put("1", new Object[] {"ID", "NAME", "LASTNAME"});
+//        data.put("2", new Object[] {1, "Amit", "Shukla"});
+//        data.put("3", new Object[] {2, "Lokesh", "Gupta"});
+//        data.put("4", new Object[] {3, "John", "Adwards"});
+//        data.put("5", new Object[] {4, "Brian", "Schultz"});
+          
+        //Iterate over data and write to sheet
+        Set<Integer> keyset = data.keySet();
+        int rownum = 0;
+        for (Integer key : keyset)
+        {
+            Row row = sheet.createRow(rownum++);
+            Object [] objArr = data.get(key);
+            int cellnum = 0;
+            for (Object obj : objArr)
+            {
+               Cell cell = row.createCell(cellnum++);
+               if(obj instanceof String)
+                    cell.setCellValue((String)obj);
+                else if(obj instanceof Integer)
+                    cell.setCellValue((Integer)obj);
+            }
+        }
+        try
+        {
+            //Write the workbook in file system
+            FileOutputStream out = new FileOutputStream(new File("/Users/Earther/Desktop/howtodoinjava_demo.xlsx"));
+            workbook.write(out);
+            
+            out.close();
+            workbook.close();
+            System.out.println("howtodoinjava_demo2.xlsx written successfully on disk.");
+        } 
+        catch (Exception e) 
+        {
+            e.printStackTrace();
+        }
+        
 	}
 
 	private void createLayout(JComponent... arg) {
@@ -245,7 +321,7 @@ public class BAMPTT extends JFrame{
 				getContentPane().add(btnRun2);
 	}
 	
-	private void processFifo2(){
+	private void processFifo2() throws InvalidFormatException, IOException{
 		ArrayList<invoice> invoiceList = new ArrayList<invoice>();
 		readCSV_Oil_Input("/Users/Earther/Desktop/lotInput.csv", invoiceList);
 		
@@ -349,12 +425,14 @@ public class BAMPTT extends JFrame{
 				while(currentLot.getQuantity()<fifoRowDetail.getInterQuantity()){//Lot not enough so insert new row
 					FifoRowDetail insertROW = new FifoRowDetail();
 					insertROW.setDateRecord(fifoRowDetail.getDateRecord());
-					insertROW.setLocalQuantity((double) -1);
-					insertROW.setLocalInvoiceName(null);
+					insertROW.setLocalQuantity(fifoRowDetail.getLocalQuantity());
+					insertROW.setLocalInvoiceName(fifoRowDetail.getLocalInvoiceName());
 					insertROW.setInterQuantity(currentLot.getQuantity());
 					insertROW.setInterInvoiceName(currentLot.getName());
 					insertROW.setInvoiceBalance((double) 0);
 					FIFO_ROW_List.add(insertROW);
+					fifoRowDetail.setLocalQuantity(-1.0);
+					fifoRowDetail.setLocalInvoiceName(null);
 					fifoRowDetail.setInterQuantity(fifoRowDetail.getInterQuantity()-currentLot.getQuantity());
 					currentLot.setQuantity(0.0);
 					if(currentLot.getQuantity()<=0)//Invoice empty load new invoice
@@ -365,6 +443,7 @@ public class BAMPTT extends JFrame{
 				}
 				//when not need to insert
 				currentLot.setQuantity(currentLot.getQuantity() - fifoRowDetail.getInterQuantity());
+				
 				fifoRowDetail.setInterInvoiceName(currentLot.getName());
 				fifoRowDetail.setInvoiceBalance(currentLot.getQuantity());
 				if(currentLot.getQuantity()<=0)//Invoice empty load new invoice
@@ -378,12 +457,13 @@ public class BAMPTT extends JFrame{
 //			fifoRowDetail = new FifoRowDetail();
 		}
 		
+		writeObjectToExcel(FIFO_ROW_List);
 		
-		System.out.println("idx,Date,local_Quantity,Local_Lot,Inter_Quantity,Inter_Lot,Balance Lot");
-		int idx=1;
-		for (FifoRowDetail fifoRowDetail : FIFO_ROW_List) {
-			System.out.println((idx++)+","+fifoRowDetail.toString());
-		}
+//		System.out.println("idx,Date,local_Quantity,Local_Lot,Inter_Quantity,Inter_Lot,Balance Lot");
+//		int idx=1;
+//		for (FifoRowDetail fifoRowDetail : FIFO_ROW_List) {
+//			System.out.println((idx++)+","+fifoRowDetail.toString());
+//		}
 	}
 	
  	private void processFifo(){
