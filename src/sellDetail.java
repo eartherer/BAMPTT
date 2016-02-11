@@ -1,3 +1,4 @@
+import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -9,12 +10,12 @@ public class sellDetail implements Comparable<sellDetail>{
 	private Date sellDate;
 	private String productName;
 	private String sellNumber;
-	private Double Quantity;
-	private Double QuantityF;
+	private BigDecimal Quantity;
+	private BigDecimal QuantityF;
 	private int regionFlg;
 	
 	public sellDetail(int idx, String sellDate, String productName,
-			String sellNumber, Double quantity, Double quantityF, int flg) throws ParseException {
+			String sellNumber, BigDecimal quantity, BigDecimal quantityF, int flg) throws ParseException {
 		super();
 		this.idx = idx;
 		this.setSellDate(sellDate);
@@ -49,16 +50,16 @@ public class sellDetail implements Comparable<sellDetail>{
 	public void setSellNumber(String sellNumber) {
 		this.sellNumber = sellNumber;
 	}
-	public Double getQuantity() {
+	public BigDecimal getQuantity() {
 		return Quantity;
 	}
-	public void setQuantity(Double quantity) {
+	public void setQuantity(BigDecimal quantity) {
 		Quantity = quantity;
 	}
-	public Double getQuantityF() {
+	public BigDecimal getQuantityF() {
 		return QuantityF;
 	}
-	public void setQuantityF(Double quantityF) {
+	public void setQuantityF(BigDecimal quantityF) {
 		QuantityF = quantityF;
 	}
 	public int getRegionFlg() {

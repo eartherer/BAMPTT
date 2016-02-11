@@ -1,22 +1,23 @@
+import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class FifoRowDetail {
 	Date	dateRecord;
-	Double localQuantity;
+	BigDecimal localQuantity;
 	String localInvoiceName;
 	
 
-	Double invoiceQuantity;
-	Double interQuantity;
-	Double invoiceBalance;
+	BigDecimal invoiceQuantity;
+	BigDecimal interQuantity;
+	BigDecimal invoiceBalance;
 	String interInvoiceName;
 	
 
-	Double sumInvoiceBalance;
+	BigDecimal sumInvoiceBalance;
 	
-	public FifoRowDetail(Double localQuantity, Double invoiceQuantity, Double interQuantity, Double invoiceBalance) {
+	public FifoRowDetail(BigDecimal localQuantity, BigDecimal invoiceQuantity, BigDecimal interQuantity, BigDecimal invoiceBalance) {
 		super();
 		this.localQuantity = localQuantity;
 		this.invoiceQuantity = invoiceQuantity;
@@ -25,8 +26,58 @@ public class FifoRowDetail {
 	}
 
 	public FifoRowDetail() {
-		this.localQuantity = this.interQuantity = this.interQuantity = this.invoiceBalance = (double) -1;
+		this.localQuantity = this.interQuantity = this.interQuantity = this.invoiceBalance = new BigDecimal(-1);
 		// TODO Auto-generated constructor stub
+	}
+
+	
+
+	public Date getDateRecord() {
+		return dateRecord;
+	}
+
+	public void setDateRecord(Date dateRecord) {
+		this.dateRecord = dateRecord;
+	}
+
+	public BigDecimal getLocalQuantity() {
+		return localQuantity;
+	}
+
+	public void setLocalQuantity(BigDecimal localQuantity) {
+		this.localQuantity = localQuantity;
+	}
+
+	public String getLocalInvoiceName() {
+		return localInvoiceName;
+	}
+
+	public void setLocalInvoiceName(String localInvoiceName) {
+		this.localInvoiceName = localInvoiceName;
+	}
+
+	public BigDecimal getInvoiceQuantity() {
+		return invoiceQuantity;
+	}
+
+	public void setInvoiceQuantity(BigDecimal invoiceQuantity) {
+		this.invoiceQuantity = invoiceQuantity;
+	}
+
+	public BigDecimal getInterQuantity() {
+		return interQuantity;
+	}
+
+	public void setInterQuantity(BigDecimal interQuantity) {
+		this.interQuantity = interQuantity;
+	}
+
+	public BigDecimal getInvoiceBalance() {
+		return invoiceBalance;
+	}
+
+	public void setInvoiceBalance(BigDecimal invoiceBalance) {
+		this.invoiceBalance = invoiceBalance;
 	}
 
 	public String getInterInvoiceName() {
@@ -36,70 +87,12 @@ public class FifoRowDetail {
 	public void setInterInvoiceName(String interInvoiceName) {
 		this.interInvoiceName = interInvoiceName;
 	}
-	
-	public String getLocalInvoiceName() {
-		return localInvoiceName;
-	}
 
-	public void setLocalInvoiceName(String localInvoiceName) {
-		this.localInvoiceName = localInvoiceName;
-	}
-	
-	public Double getLocalQuantity() {
-		return localQuantity;
-	}
-
-	public void setLocalQuantity(Double localQuantity) {
-		this.localQuantity = localQuantity;
-	}
-
-	public Double getInvoiceQuantity() {
-		return invoiceQuantity;
-	}
-
-	public void setInvoiceQuantity(Double invoiceQuantity) {
-		this.invoiceQuantity = invoiceQuantity;
-	}
-
-	public Double getInterQuantity() {
-		return interQuantity;
-	}
-
-	public void setInterQuantity(Double interQuantity) {
-		this.interQuantity = interQuantity;
-	}
-
-	public Double getInvoiceBalance() {
-		return invoiceBalance;
-	}
-
-	public void setInvoiceBalance(Double invoiceBalance) {
-		this.invoiceBalance = invoiceBalance;
-	}
-	
-	
-	public Date getDateRecord() {
-		return dateRecord;
-	}
-
-	public void setDateRecord(Date dateRecord) {
-		this.dateRecord = dateRecord;
-	}
-
-	public String getInvoiceName() {
-		return interInvoiceName;
-	}
-
-	public void setInvoiceName(String invoiceName) {
-		this.interInvoiceName = invoiceName;
-	}
-
-	
-	public Double getSumInvoiceBalance() {
+	public BigDecimal getSumInvoiceBalance() {
 		return sumInvoiceBalance;
 	}
 
-	public void setSumInvoiceBalance(Double sumInvoiceBalance) {
+	public void setSumInvoiceBalance(BigDecimal sumInvoiceBalance) {
 		this.sumInvoiceBalance = sumInvoiceBalance;
 	}
 
@@ -108,9 +101,9 @@ public class FifoRowDetail {
 		// TODO Auto-generated method stub
 		DateFormat df = new SimpleDateFormat("dd/MM/yy");
 		String local_Q="";
-		if(getLocalQuantity()!=-1.0) local_Q=getLocalQuantity().toString();
+		if(!getLocalQuantity().equals(new BigDecimal(-1))) local_Q=getLocalQuantity().toString();
 		String inter_Q="";
-		if(getInterQuantity()!=-1.0) inter_Q=getInterQuantity().toString();
+		if(!getInterQuantity().equals(new BigDecimal(-1))) inter_Q=getInterQuantity().toString();
 		String localIVN=getLocalInvoiceName();
 		if(getLocalInvoiceName()==null) localIVN="";
 		

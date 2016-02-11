@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -68,7 +69,7 @@ public class BAMPTT extends JFrame{
 //		System.out.println("End program");
 	}
 	
-	private void writeObjectToExcel(ArrayList<FifoRowDetail> dataList) throws InvalidFormatException, IOException{
+	private void writeObjectToExcel(ArrayList<FifoRowDetail> dataList,String outputPath) throws InvalidFormatException, IOException{
 		//Blank workbook
         XSSFWorkbook workbook = new XSSFWorkbook(); 
          
@@ -84,9 +85,9 @@ public class BAMPTT extends JFrame{
 			data.put(idx, new Object[]{
 				idx,
 				df.format(record.getDateRecord()),
-				record.getLocalQuantity()==-1?"":record.getLocalQuantity().toString(),
+				record.getLocalQuantity().equals(new BigDecimal(-1))?"":record.getLocalQuantity().toString(),
 				record.getLocalInvoiceName(),
-				record.getInterQuantity()==-1?"":record.getInterQuantity().toString(),
+				record.getInterQuantity().equals(new BigDecimal(-1))?"":record.getInterQuantity().toString(),
 				record.getInterInvoiceName(),
 				record.getInvoiceBalance().toString()
 			});
@@ -118,7 +119,7 @@ public class BAMPTT extends JFrame{
         try
         {
             //Write the workbook in file system
-            FileOutputStream out = new FileOutputStream(new File("/Users/Earther/Desktop/howtodoinjava_demo.xlsx"));
+            FileOutputStream out = new FileOutputStream(new File(outputPath));
             workbook.write(out);
             
             out.close();
@@ -288,6 +289,37 @@ public class BAMPTT extends JFrame{
 				});
 				getContentPane().add(btnRun);
 				
+				// Label Result
+				final JLabel lblResult4 = new JLabel("Oil Lot input File Path",JLabel.LEFT);
+				lblResult4.setBounds(25,350,300,25);
+				getContentPane().add(lblResult4);
+				
+				final JTextField InterFilePath4 = new JTextField("Select File Path");
+				InterFilePath4.setBounds(25, 375, 400, 25);
+				InterFilePath4.setText("/Users/Earther/Desktop/oilInput.csv");
+				getContentPane().add(InterFilePath4);
+				
+				// Create Button Open JFileChooser
+				JButton btnButton4 = new JButton("Browse");
+				btnButton4.setBounds(25, 400, 121, 30);
+				btnButton4.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						
+						JFileChooser fileopen = new JFileChooser();
+		                FileNameExtensionFilter filter = new FileNameExtensionFilter("Text/CSV file", "txt", "csv");
+		                fileopen.addChoosableFileFilter(filter);
+
+		                int ret = fileopen.showDialog(null, "Save file");
+
+		                if (ret == JFileChooser.APPROVE_OPTION) {
+		                	InterFilePath4.setText(fileopen.getSelectedFile().toString());
+		                	repaint();
+		                }
+
+					}
+				});
+				getContentPane().add(btnButton4);
+				
 				JButton btnRun2 = new JButton("RunFIFO Invoice");
 				btnRun2.setBounds(155, 300, 150, 30);
 				btnRun2.addActionListener(new ActionListener() {
@@ -309,21 +341,23 @@ public class BAMPTT extends JFrame{
 							m1.readCVS(interPathfileStr,sellInter,1);
 							m1.readCVS(localPathfileStr,sellLocal,0);
 							m1.sumSellLocal();
-							m1.processFifo2();
+							m1.processFifo2(InterFilePath4.getText(),InterFilePath3.getText());
 							//m1.processOutput(outputPathfileStr);
 							System.out.println(">>>End Process......");
 						}catch(Exception e1){
-							
+							e1.printStackTrace();
 						}
 						
 					}
 				});
 				getContentPane().add(btnRun2);
+				
+				
 	}
 	
-	private void processFifo2() throws InvalidFormatException, IOException{
+	private void processFifo2(String filepath,String outputPath) throws InvalidFormatException, IOException{
 		ArrayList<invoice> invoiceList = new ArrayList<invoice>();
-		readCSV_Oil_Input("/Users/Earther/Desktop/lotInput.csv", invoiceList);
+		readCSV_Oil_Input(filepath, invoiceList);
 		
 		ArrayList<sellDetail> sum_allData = new ArrayList<>();
 		sum_allData.addAll(sellInter);
@@ -358,7 +392,7 @@ public class BAMPTT extends JFrame{
 				rowTMP = new FifoRowDetail();
 			}else{//Same prev Date
 				if(recordDetail.getRegionFlg()==0){ //Local Case
-					if(prevROW.getLocalQuantity()==-1){//prevROW local is empty so put it...
+					if(prevROW.getLocalQuantity().equals(new BigDecimal(-1))){//prevROW local is empty so put it...
 						prevROW.setLocalQuantity(recordDetail.getQuantityF());
 					}else{ //prevROW local is full so new object
 						rowTMP = new FifoRowDetail();
@@ -369,7 +403,7 @@ public class BAMPTT extends JFrame{
 						rowTMP = new FifoRowDetail();
 					}
 				}else if(recordDetail.getRegionFlg()==1){ //Inter Case
-					if(prevROW.getInterQuantity()==-1){//prevROW inter is empty so put it...
+					if(prevROW.getInterQuantity().equals(new BigDecimal(-1))){//prevROW inter is empty so put it...
 						prevROW.setInterQuantity(recordDetail.getQuantityF());
 					}else{ //prevROW local is full so new object
 						rowTMP = new FifoRowDetail();
@@ -393,60 +427,61 @@ public class BAMPTT extends JFrame{
 		
 		for (FifoRowDetail fifoRowDetail : fifoRowDetailsList) {
 //			if(FIFO_ROW_List.size()==10) break;
-			if(fifoRowDetail.getLocalQuantity()!=-1){ //There is local 
-				while(currentLot.getQuantity()<fifoRowDetail.getLocalQuantity()){//Lot not enough so insert new row
+			if(!fifoRowDetail.getLocalQuantity().equals(new BigDecimal(-1))){ //There is local 
+				while(currentLot.getQuantity().compareTo(fifoRowDetail.getLocalQuantity())==-1){//Lot not enough so insert new row
 					FifoRowDetail insertROW = new FifoRowDetail();
 					insertROW.setDateRecord(fifoRowDetail.getDateRecord());
 					insertROW.setLocalQuantity(currentLot.getQuantity());
 					insertROW.setLocalInvoiceName(currentLot.getName());
-					insertROW.setInterQuantity((double) -1);
+					insertROW.setInterQuantity(new BigDecimal(-1));
 					insertROW.setInterInvoiceName(null);
-					insertROW.setInvoiceBalance((double) 0);
+					insertROW.setInvoiceBalance(new BigDecimal(0));
 					FIFO_ROW_List.add(insertROW);
-					fifoRowDetail.setLocalQuantity(fifoRowDetail.getLocalQuantity()-currentLot.getQuantity());
-					currentLot.setQuantity(0.0);
-					if(currentLot.getQuantity()<=0)//Invoice empty load new invoice
+					fifoRowDetail.setLocalQuantity(fifoRowDetail.getLocalQuantity().subtract(currentLot.getQuantity()));
+					currentLot.setQuantity(new BigDecimal(0));
+					if(currentLot.getQuantity().compareTo(BigDecimal.ZERO)<1)//Invoice empty load new invoice
+						//True when Lot less than zero #when zero return 0 when less than return -1 
 						if(invoiceIndex == invoiceList.size()) //Invoice empty
 							break; //Go out loop
 						else
 							currentLot = invoiceList.get(invoiceIndex++); // Load new invoice
 				}
 				//when not need to insert
-				currentLot.setQuantity(currentLot.getQuantity() - fifoRowDetail.getLocalQuantity());
+				currentLot.setQuantity(currentLot.getQuantity().subtract(fifoRowDetail.getLocalQuantity()));
 				fifoRowDetail.setLocalInvoiceName(currentLot.getName());
 				fifoRowDetail.setInvoiceBalance(currentLot.getQuantity());
-				if(currentLot.getQuantity()<=0)//Invoice empty load new invoice
+				if(currentLot.getQuantity().compareTo(BigDecimal.ZERO)<1)//Invoice empty load new invoice
 					if(invoiceIndex == invoiceList.size()) //Invoice empty
 						break; //Go out loop
 					else
 						currentLot = invoiceList.get(invoiceIndex++); // Load new invoice
 			}
-			if(fifoRowDetail.getInterQuantity()!=-1){ //There is inter
-				while(currentLot.getQuantity()<fifoRowDetail.getInterQuantity()){//Lot not enough so insert new row
+			if(!fifoRowDetail.getInterQuantity().equals(new BigDecimal(-1))){ //There is inter
+				while(currentLot.getQuantity().compareTo(fifoRowDetail.getInterQuantity())==-1){//Lot not enough so insert new row
 					FifoRowDetail insertROW = new FifoRowDetail();
 					insertROW.setDateRecord(fifoRowDetail.getDateRecord());
 					insertROW.setLocalQuantity(fifoRowDetail.getLocalQuantity());
 					insertROW.setLocalInvoiceName(fifoRowDetail.getLocalInvoiceName());
 					insertROW.setInterQuantity(currentLot.getQuantity());
 					insertROW.setInterInvoiceName(currentLot.getName());
-					insertROW.setInvoiceBalance((double) 0);
+					insertROW.setInvoiceBalance(BigDecimal.ZERO);
 					FIFO_ROW_List.add(insertROW);
-					fifoRowDetail.setLocalQuantity(-1.0);
+					fifoRowDetail.setLocalQuantity(new BigDecimal(-1));
 					fifoRowDetail.setLocalInvoiceName(null);
-					fifoRowDetail.setInterQuantity(fifoRowDetail.getInterQuantity()-currentLot.getQuantity());
-					currentLot.setQuantity(0.0);
-					if(currentLot.getQuantity()<=0)//Invoice empty load new invoice
+					fifoRowDetail.setInterQuantity(fifoRowDetail.getInterQuantity().subtract(currentLot.getQuantity()));
+					currentLot.setQuantity(BigDecimal.ZERO);
+					if(currentLot.getQuantity().compareTo(BigDecimal.ZERO)<1)//Invoice empty load new invoice
 						if(invoiceIndex == invoiceList.size()) //Invoice empty
 							break; //Go out loop
 						else
 							currentLot = invoiceList.get(invoiceIndex++); // Load new invoice
 				}
 				//when not need to insert
-				currentLot.setQuantity(currentLot.getQuantity() - fifoRowDetail.getInterQuantity());
+				currentLot.setQuantity(currentLot.getQuantity().subtract(fifoRowDetail.getInterQuantity()));
 				
 				fifoRowDetail.setInterInvoiceName(currentLot.getName());
 				fifoRowDetail.setInvoiceBalance(currentLot.getQuantity());
-				if(currentLot.getQuantity()<=0)//Invoice empty load new invoice
+				if(currentLot.getQuantity().compareTo(BigDecimal.ZERO)<1)//Invoice empty load new invoice
 					if(invoiceIndex == invoiceList.size()) //Invoice empty
 						break; //Go out loop
 					else
@@ -457,7 +492,7 @@ public class BAMPTT extends JFrame{
 //			fifoRowDetail = new FifoRowDetail();
 		}
 		
-		writeObjectToExcel(FIFO_ROW_List);
+		writeObjectToExcel(FIFO_ROW_List,outputPath);
 		
 //		System.out.println("idx,Date,local_Quantity,Local_Lot,Inter_Quantity,Inter_Lot,Balance Lot");
 //		int idx=1;
@@ -466,85 +501,63 @@ public class BAMPTT extends JFrame{
 //		}
 	}
 	
- 	private void processFifo(){
-//		List<invoice> invoiceList = new ArrayList<invoice>();
-//		invoiceList.add(new invoice(1, "TOP 161115", (double) 122093.5913620120000000));
-//		invoiceList.add(new invoice(2, "GC 161115", (double) 219710.8170000000000000));
-//		invoiceList.add(new invoice(2, "TOP 181115", (double) 131852.2850000000000000));
-//		invoiceList.add(new invoice(2, "GC 201115", (double) 175774.0110000000000000));
-//		invoiceList.add(new invoice(2, "TOP 211115", (double) 80184.8730000001000000));
-//		invoiceList.add(new invoice(2, "TOP 231115", (double) 490653.3610000000000000));
-//		invoiceList.add(new invoice(2, "TOP 251115", (double) 175531.1150000000000000));
-//		invoiceList.add(new invoice(2, "GC 251115", (double) 263830.6820000000000000));
-//		invoiceList.add(new invoice(2, "TOP 281115", (double) 131766.9860000000000000));
-		ArrayList<invoice> invoiceList = new ArrayList<invoice>();
-		readCSV_Oil_Input("/Users/Earther/Desktop/lotInput.csv", invoiceList);
-		
-		ArrayList<sellDetail> sum_allData = new ArrayList<>();
-		sum_allData.addAll(sellInter);
-		sum_allData.addAll(sum_sellLocal);
-		Collections.sort(sum_allData);
-		
-		int invoiceIndex = 0;
-//		int expenseIndex = 0;
-		sellDetail prevRecord = null;
-		Date prevDate = null;
-		
-		ArrayList<FifoRowDetail> fifoRowDetailsList = new ArrayList<FifoRowDetail>();
-		invoice invoiceForFIFO = invoiceList.get(invoiceIndex++);
-		FifoRowDetail rowFIFO = new FifoRowDetail();
-		for (sellDetail recordDetail : sum_allData) {
-			if(prevDate==null || recordDetail.getSellDate().compareTo(prevDate)!=0? true:false){
-				//New Date
-				prevRecord = recordDetail;
-				prevDate	=	recordDetail.getSellDate();
-				
-			}
-				//Same Date
-				if(recordDetail.getRegionFlg()==0){ //IF load local data then skip loop and load inter too
-					rowFIFO.setLocalQuantity(recordDetail.getQuantityF());
-					continue;//skip to load inter
-				}else if(recordDetail.getRegionFlg()==1){
-					rowFIFO.setInterQuantity(recordDetail.getQuantityF());
-				}
-				//Load date to row
-				rowFIFO.setDateRecord(prevDate);
-				//After load local and inter to set invoice quantity 
-				rowFIFO.setInvoiceQuantity(invoiceForFIFO.getQuantity());
-				
-				if(rowFIFO.getLocalQuantity() != -1 && invoiceForFIFO.getQuantity()>0){ 
-					while(invoiceForFIFO.getQuantity() <= rowFIFO.getLocalQuantity()){
-						FifoRowDetail tmp = new FifoRowDetail();
-						tmp.setDateRecord(rowFIFO.getDateRecord());
-						tmp.setInterQuantity(0.0);
-						tmp.setLocalQuantity(invoiceForFIFO.getQuantity());
-						tmp.setInvoiceBalance((double) 0);
-						tmp.setInvoiceName(invoiceForFIFO.getName());
-						fifoRowDetailsList.add(tmp);
-						rowFIFO.setLocalQuantity(rowFIFO.getLocalQuantity() - invoiceForFIFO.getQuantity());
-						invoiceForFIFO.setQuantity(0.0);
-						if(invoiceForFIFO.getQuantity()<=0)//Invoice empty load new invoice
-							if(invoiceIndex == invoiceList.size()) //Invoice empty
-								break; //Go out loop
-							else
-								invoiceForFIFO = invoiceList.get(invoiceIndex++); // Load new invoice							
-					}
-					invoiceForFIFO.setQuantity(invoiceForFIFO.getQuantity()-rowFIFO.getLocalQuantity());
-//					if(rowFIFO.getInterQuantity()==0 || rowFIFO.getLocalQuantity()==0){
-//						rowFIFO = new FifoRowDetail();
-//						continue;
-//					}
-				}
-				
+// 	private void processFifo(){
+////		List<invoice> invoiceList = new ArrayList<invoice>();
+////		invoiceList.add(new invoice(1, "TOP 161115", (double) 122093.5913620120000000));
+////		invoiceList.add(new invoice(2, "GC 161115", (double) 219710.8170000000000000));
+////		invoiceList.add(new invoice(2, "TOP 181115", (double) 131852.2850000000000000));
+////		invoiceList.add(new invoice(2, "GC 201115", (double) 175774.0110000000000000));
+////		invoiceList.add(new invoice(2, "TOP 211115", (double) 80184.8730000001000000));
+////		invoiceList.add(new invoice(2, "TOP 231115", (double) 490653.3610000000000000));
+////		invoiceList.add(new invoice(2, "TOP 251115", (double) 175531.1150000000000000));
+////		invoiceList.add(new invoice(2, "GC 251115", (double) 263830.6820000000000000));
+////		invoiceList.add(new invoice(2, "TOP 281115", (double) 131766.9860000000000000));
+//		ArrayList<invoice> invoiceList = new ArrayList<invoice>();
+//		readCSV_Oil_Input("/Users/Earther/Desktop/lotInput.csv", invoiceList);
+//		
+//		ArrayList<sellDetail> sum_allData = new ArrayList<>();
+//		sum_allData.addAll(sellInter);
+//		sum_allData.addAll(sum_sellLocal);
+//		Collections.sort(sum_allData);
+//		
+//		int invoiceIndex = 0;
+////		int expenseIndex = 0;
+//		sellDetail prevRecord = null;
+//		Date prevDate = null;
+//		
+//		ArrayList<FifoRowDetail> fifoRowDetailsList = new ArrayList<FifoRowDetail>();
+//		invoice invoiceForFIFO = invoiceList.get(invoiceIndex++);
+//		FifoRowDetail rowFIFO = new FifoRowDetail();
+//		for (sellDetail recordDetail : sum_allData) {
+//			if(prevDate==null || recordDetail.getSellDate().compareTo(prevDate)!=0? true:false){
+//				//New Date
+//				prevRecord = recordDetail;
+//				prevDate	=	recordDetail.getSellDate();
+//				
+//			}
+//				//Same Date
+//				if(recordDetail.getRegionFlg()==0){ //IF load local data then skip loop and load inter too
+//					rowFIFO.setLocalQuantity(recordDetail.getQuantityF());
+//					continue;//skip to load inter
+//				}else if(recordDetail.getRegionFlg()==1){
+//					rowFIFO.setInterQuantity(recordDetail.getQuantityF());
+//				}
+//				//Load date to row
+//				rowFIFO.setDateRecord(prevDate);
+//				//After load local and inter to set invoice quantity 
+//				rowFIFO.setInvoiceQuantity(invoiceForFIFO.getQuantity());
+//				
 //				if(rowFIFO.getLocalQuantity() != -1 && invoiceForFIFO.getQuantity()>0){ 
-//					if(invoiceForFIFO.getQuantity() < rowFIFO.getLocalQuantity()){
+//					while(invoiceForFIFO.getQuantity() <= rowFIFO.getLocalQuantity()){
 //						FifoRowDetail tmp = new FifoRowDetail();
 //						tmp.setDateRecord(rowFIFO.getDateRecord());
-//						tmp.setInterQuantity(rowFIFO.getInterQuantity());
-//						tmp.setLocalQuantity(rowFIFO.getLocalQuantity());
+//						tmp.setInterQuantity(0.0);
+//						tmp.setLocalQuantity(invoiceForFIFO.getQuantity());
 //						tmp.setInvoiceBalance((double) 0);
 //						tmp.setInvoiceName(invoiceForFIFO.getName());
 //						fifoRowDetailsList.add(tmp);
+//						rowFIFO.setLocalQuantity(rowFIFO.getLocalQuantity() - invoiceForFIFO.getQuantity());
+//						invoiceForFIFO.setQuantity(0.0);
 //						if(invoiceForFIFO.getQuantity()<=0)//Invoice empty load new invoice
 //							if(invoiceIndex == invoiceList.size()) //Invoice empty
 //								break; //Go out loop
@@ -552,52 +565,74 @@ public class BAMPTT extends JFrame{
 //								invoiceForFIFO = invoiceList.get(invoiceIndex++); // Load new invoice							
 //					}
 //					invoiceForFIFO.setQuantity(invoiceForFIFO.getQuantity()-rowFIFO.getLocalQuantity());
+////					if(rowFIFO.getInterQuantity()==0 || rowFIFO.getLocalQuantity()==0){
+////						rowFIFO = new FifoRowDetail();
+////						continue;
+////					}
 //				}
-				
-				if(rowFIFO.getInterQuantity() != -1 && invoiceForFIFO.getQuantity()>0){ 
-					while(invoiceForFIFO.getQuantity() <= rowFIFO.getInterQuantity()){
-						FifoRowDetail tmp = new FifoRowDetail();
-						tmp.setDateRecord(rowFIFO.getDateRecord());
-						tmp.setInterQuantity(invoiceForFIFO.getQuantity());
-						tmp.setLocalQuantity(rowFIFO.getLocalQuantity());
-						tmp.setInvoiceBalance((double) 0);
-						tmp.setInvoiceName(invoiceForFIFO.getName());
-						fifoRowDetailsList.add(tmp);
-						rowFIFO.setInterQuantity(rowFIFO.getInterQuantity() - invoiceForFIFO.getQuantity());
-						invoiceForFIFO.setQuantity(0.0);
-						if(invoiceForFIFO.getQuantity()<=0)//Invoice empty load new invoice
-							if(invoiceIndex == invoiceList.size()) //Invoice empty
-								break; //Go out loop
-							else
-								invoiceForFIFO = invoiceList.get(invoiceIndex++); // Load new invoice							
-					}
-					invoiceForFIFO.setQuantity(invoiceForFIFO.getQuantity()-rowFIFO.getInterQuantity());
-				}
-	
-				if(rowFIFO.getInterQuantity()==0)
-					continue;
-				rowFIFO.setInvoiceBalance(invoiceForFIFO.getQuantity()); //Get invoice balance from Current Invoice
-				rowFIFO.setInvoiceName(invoiceForFIFO.getName());
-//				if(invoiceForFIFO.getQuantity()<0){
-//					if(invoiceIndex == invoiceList.size()) //Invoice empty
-//						break; //Go out loop
-//					else
-//						invoiceForFIFO = invoiceList.get(invoiceIndex++); // Load new invoice
+//				
+////				if(rowFIFO.getLocalQuantity() != -1 && invoiceForFIFO.getQuantity()>0){ 
+////					if(invoiceForFIFO.getQuantity() < rowFIFO.getLocalQuantity()){
+////						FifoRowDetail tmp = new FifoRowDetail();
+////						tmp.setDateRecord(rowFIFO.getDateRecord());
+////						tmp.setInterQuantity(rowFIFO.getInterQuantity());
+////						tmp.setLocalQuantity(rowFIFO.getLocalQuantity());
+////						tmp.setInvoiceBalance((double) 0);
+////						tmp.setInvoiceName(invoiceForFIFO.getName());
+////						fifoRowDetailsList.add(tmp);
+////						if(invoiceForFIFO.getQuantity()<=0)//Invoice empty load new invoice
+////							if(invoiceIndex == invoiceList.size()) //Invoice empty
+////								break; //Go out loop
+////							else
+////								invoiceForFIFO = invoiceList.get(invoiceIndex++); // Load new invoice							
+////					}
+////					invoiceForFIFO.setQuantity(invoiceForFIFO.getQuantity()-rowFIFO.getLocalQuantity());
+////				}
+//				
+//				if(rowFIFO.getInterQuantity() != -1 && invoiceForFIFO.getQuantity()>0){ 
+//					while(invoiceForFIFO.getQuantity() <= rowFIFO.getInterQuantity()){
+//						FifoRowDetail tmp = new FifoRowDetail();
+//						tmp.setDateRecord(rowFIFO.getDateRecord());
+//						tmp.setInterQuantity(invoiceForFIFO.getQuantity());
+//						tmp.setLocalQuantity(rowFIFO.getLocalQuantity());
+//						tmp.setInvoiceBalance((double) 0);
+//						tmp.setInvoiceName(invoiceForFIFO.getName());
+//						fifoRowDetailsList.add(tmp);
+//						rowFIFO.setInterQuantity(rowFIFO.getInterQuantity() - invoiceForFIFO.getQuantity());
+//						invoiceForFIFO.setQuantity(0.0);
+//						if(invoiceForFIFO.getQuantity()<=0)//Invoice empty load new invoice
+//							if(invoiceIndex == invoiceList.size()) //Invoice empty
+//								break; //Go out loop
+//							else
+//								invoiceForFIFO = invoiceList.get(invoiceIndex++); // Load new invoice							
+//					}
+//					invoiceForFIFO.setQuantity(invoiceForFIFO.getQuantity()-rowFIFO.getInterQuantity());
 //				}
-				fifoRowDetailsList.add(rowFIFO);
-				rowFIFO = new FifoRowDetail();
-			
-		}
-		
-		for (FifoRowDetail fifoRowDetail : fifoRowDetailsList) {
-			System.out.println(fifoRowDetail.toString());
-		}
-	}
+//	
+//				if(rowFIFO.getInterQuantity()==0)
+//					continue;
+//				rowFIFO.setInvoiceBalance(invoiceForFIFO.getQuantity()); //Get invoice balance from Current Invoice
+//				rowFIFO.setInvoiceName(invoiceForFIFO.getName());
+////				if(invoiceForFIFO.getQuantity()<0){
+////					if(invoiceIndex == invoiceList.size()) //Invoice empty
+////						break; //Go out loop
+////					else
+////						invoiceForFIFO = invoiceList.get(invoiceIndex++); // Load new invoice
+////				}
+//				fifoRowDetailsList.add(rowFIFO);
+//				rowFIFO = new FifoRowDetail();
+//			
+//		}
+//		
+//		for (FifoRowDetail fifoRowDetail : fifoRowDetailsList) {
+//			System.out.println(fifoRowDetail.toString());
+//		}
+//	}
 
-	private double calculateBalanceInvoice(ArrayList<invoice> invoiceList){
-		double sumBalance = 0;
+	private BigDecimal calculateBalanceInvoice(ArrayList<invoice> invoiceList){
+		BigDecimal sumBalance = BigDecimal.ZERO;
 		for (invoice invoice : invoiceList) {
-			sumBalance += invoice.getQuantity();
+			sumBalance = sumBalance.add(invoice.getQuantity());
 		}
 		return sumBalance;
 	}
@@ -689,8 +724,8 @@ public class BAMPTT extends JFrame{
 				prevDate	=	recordDetail.getSellDate();
 				sum_sellLocal.add(prevRecord);
 			}else{
-				prevRecord.setQuantity(prevRecord.getQuantity()+recordDetail.getQuantity());
-				prevRecord.setQuantityF(prevRecord.getQuantityF()+recordDetail.getQuantityF());
+				prevRecord.setQuantity(prevRecord.getQuantity().add(recordDetail.getQuantity()));
+				prevRecord.setQuantityF(prevRecord.getQuantityF().add(recordDetail.getQuantityF()));
 			}
 		}
 	}
@@ -710,9 +745,13 @@ public class BAMPTT extends JFrame{
 
 			        // use comma as separator
 				String[] record = line.split(cvsSplitBy);
-				dataList.add(new sellDetail(Integer.parseInt(record[0]), record[1], record[2], record[3], Double.parseDouble(record[4]), Double.parseDouble(record[5]), flg));
-//				System.out.print(">");
-
+				dataList.add(new sellDetail(Integer.parseInt(record[0])
+						, record[1]
+						, record[2]
+						, record[3]
+						, (new BigDecimal(record[4])).setScale(3, BigDecimal.ROUND_HALF_UP)
+						, (new BigDecimal(record[5])).setScale(3, BigDecimal.ROUND_HALF_UP)
+						, flg));
 			}
 
 		} catch (FileNotFoundException e) {
@@ -746,7 +785,10 @@ public class BAMPTT extends JFrame{
 
 			        // use comma as separator
 				String[] record = line.split(cvsSplitBy);
-				oilLotList.add(new invoice(Integer.parseInt(record[2]), record[0], Double.parseDouble(record[1])));
+				oilLotList.add(new invoice(Integer.parseInt(record[2])
+						, record[0]
+						, (new BigDecimal(record[1])).setScale(3, BigDecimal.ROUND_HALF_UP)
+						));
 //				System.out.print(">");
 
 			}

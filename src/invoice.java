@@ -1,9 +1,10 @@
+import java.math.BigDecimal;
 
 public class invoice {
 	int idx;
 	String name;
-	Double quantity;
-	public invoice(int idx, String name, Double quantity) {
+	BigDecimal quantity;
+	public invoice(int idx, String name, BigDecimal quantity) {
 		super();
 		this.idx = idx;
 		this.name = name;
@@ -21,10 +22,10 @@ public class invoice {
 	public void setName(String name) {
 		this.name = name;
 	}
-	public Double getQuantity() {
+	public BigDecimal getQuantity() {
 		return quantity;
 	}
-	public void setQuantity(Double quantity) {
+	public void setQuantity(BigDecimal quantity) {
 		this.quantity = quantity;
 	}
 	
