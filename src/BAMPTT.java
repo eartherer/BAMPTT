@@ -1,4 +1,6 @@
 import java.awt.Label;
+import java.awt.ScrollPane;
+import java.awt.TextArea;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
@@ -10,6 +12,8 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -31,6 +35,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -43,6 +48,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class BAMPTT extends JFrame{
 
+	TextArea textStatus;
+	
 	public BAMPTT(){
 //		initUI();
 	}
@@ -69,7 +76,7 @@ public class BAMPTT extends JFrame{
 //		System.out.println("End program");
 	}
 	
-	private void writeObjectToExcel(ArrayList<FifoRowDetail> dataList,String outputPath) throws InvalidFormatException, IOException{
+	private void writeObjectToExcel(ArrayList<FifoRowDetail> dataList,String outputPath,ArrayList<invoice> invoiceList) throws InvalidFormatException, IOException{
 		//Blank workbook
         XSSFWorkbook workbook = new XSSFWorkbook(); 
          
@@ -93,6 +100,7 @@ public class BAMPTT extends JFrame{
 			});
 			idx++;
 		}
+        
 //        data.put("1", new Object[] {"ID", "NAME", "LASTNAME"});
 //        data.put("2", new Object[] {1, "Amit", "Shukla"});
 //        data.put("3", new Object[] {2, "Lokesh", "Gupta"});
@@ -116,6 +124,28 @@ public class BAMPTT extends JFrame{
                     cell.setCellValue((Integer)obj);
             }
         }
+        /*
+         * Add Lot remaining Header
+         */
+        Row row = sheet.createRow(rownum++);
+        Cell cell;
+        cell = row.createCell(0);
+        cell.setCellValue("Lot Remaining");
+        row = sheet.createRow(rownum++);
+        cell = row.createCell(0);
+        cell.setCellValue("Lot");
+        cell = row.createCell(1);
+        cell.setCellValue("Quantity");
+        for (invoice lot : invoiceList) {
+        	if(lot.getQuantity().compareTo(BigDecimal.ZERO)==0)
+        		continue;
+        	row = sheet.createRow(rownum++);
+        	cell = row.createCell(0);
+            cell.setCellValue(lot.getName());
+            cell = row.createCell(1);
+            cell.setCellValue(lot.getQuantity().toString());
+		}
+        
         try
         {
             //Write the workbook in file system
@@ -160,10 +190,19 @@ public class BAMPTT extends JFrame{
 	private void initUI() {
         
 				// Create Form Frame
-				setSize(500, 500);
+				setSize(800, 500);
 				setLocation(500, 280);
 				setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 				getContentPane().setLayout(null);
+				
+				//Text Area
+				textStatus = new TextArea(5,10);
+				JScrollPane ScrollPane = new JScrollPane(textStatus);
+				textStatus.setEditable(false);
+				ScrollPane.setBounds(470, 25, 300, 400);
+				
+				getContentPane().add(ScrollPane);
+				
 				
 				// Label Result
 				final JLabel lblResult = new JLabel("Internation File Path",JLabel.LEFT);
@@ -250,7 +289,7 @@ public class BAMPTT extends JFrame{
 		                int ret = fileopen.showDialog(null, "Save file");
 
 		                if (ret == JFileChooser.APPROVE_OPTION) {
-		                	InterFilePath3.setText(fileopen.getSelectedFile().toString()+".csv");
+		                	InterFilePath3.setText(fileopen.getSelectedFile().toString()+".xls");
 		                	repaint();
 		                }
 
@@ -296,7 +335,7 @@ public class BAMPTT extends JFrame{
 				
 				final JTextField InterFilePath4 = new JTextField("Select File Path");
 				InterFilePath4.setBounds(25, 375, 400, 25);
-				InterFilePath4.setText("/Users/Earther/Desktop/oilInput.csv");
+				InterFilePath4.setText("/Users/Earther/Desktop/lotInput.csv");
 				getContentPane().add(InterFilePath4);
 				
 				// Create Button Open JFileChooser
@@ -336,16 +375,25 @@ public class BAMPTT extends JFrame{
 						
 						BAMPTT m1 = new BAMPTT();
 						try{
-							System.out.println(">>>Start Process......");
+							System.out.println(">>>Start Process......\n");repaint();
+							textStatus.append(">>>Start FIFO Process......\n");repaint();
 							m1.initVariable();
+							textStatus.append(">>>Start Read Inter Data......\n");repaint();
 							m1.readCVS(interPathfileStr,sellInter,1);
+							textStatus.append(">>>Finish Read Inter Data......\n");repaint();
+							textStatus.append(">>>Start Read Local Data......\n");repaint();
 							m1.readCVS(localPathfileStr,sellLocal,0);
+							textStatus.append(">>>Finish Read Local Data......\n");repaint();
+							textStatus.append(">>>Start Sum Local Data......\n");repaint();
 							m1.sumSellLocal();
+							textStatus.append(">>>Finish Read Local Data......\n");repaint();
 							m1.processFifo2(InterFilePath4.getText(),InterFilePath3.getText());
 							//m1.processOutput(outputPathfileStr);
-							System.out.println(">>>End Process......");
+							textStatus.append(">>>Finish FIFO Process......\n");repaint();
+							System.out.println(">>>Finish FIFO Process......\n");repaint();
 						}catch(Exception e1){
 							e1.printStackTrace();
+							textStatus.append(getStackTrace(e1));
 						}
 						
 					}
@@ -492,7 +540,7 @@ public class BAMPTT extends JFrame{
 //			fifoRowDetail = new FifoRowDetail();
 		}
 		
-		writeObjectToExcel(FIFO_ROW_List,outputPath);
+		writeObjectToExcel(FIFO_ROW_List,outputPath,invoiceList);
 		
 //		System.out.println("idx,Date,local_Quantity,Local_Lot,Inter_Quantity,Inter_Lot,Balance Lot");
 //		int idx=1;
@@ -809,5 +857,12 @@ public class BAMPTT extends JFrame{
 
 		System.out.println("End Read Oil Input");
 	  
+	}
+	
+	public static String getStackTrace(final Throwable throwable) {
+	     final StringWriter sw = new StringWriter();
+	     final PrintWriter pw = new PrintWriter(sw, true);
+	     throwable.printStackTrace(pw);
+	     return sw.getBuffer().toString();
 	}
 }
