@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -214,7 +215,7 @@ public class BAMPTT extends JFrame{
 				
 				final JTextField InterFilePath = new JTextField("Select File Path");
 				InterFilePath.setBounds(25, 25, 400, 25);
-				InterFilePath.setText("/Users/Earther/Desktop/interkabi.csv");
+				InterFilePath.setText("C:/Users/EVO_250/Desktop/BAMPTT/FIFO/inter.csv");
 				getContentPane().add(InterFilePath);
 				
 				// Create Button Open JFileChooser
@@ -245,7 +246,7 @@ public class BAMPTT extends JFrame{
 				
 				final JTextField InterFilePath2 = new JTextField("Select File Path");
 				InterFilePath2.setBounds(25, 125, 400, 25);
-				InterFilePath2.setText("/Users/Earther/Desktop/localkabi.csv");
+				InterFilePath2.setText("C:/Users/EVO_250/Desktop/BAMPTT/FIFO/local.csv");
 				getContentPane().add(InterFilePath2);
 				
 				// Create Button Open JFileChooser
@@ -276,7 +277,7 @@ public class BAMPTT extends JFrame{
 				
 				final JTextField InterFilePath3 = new JTextField("Select File Path");
 				InterFilePath3.setBounds(25, 215, 400, 25);
-				InterFilePath3.setText("/Users/Earther/Desktop/output.csv");
+				InterFilePath3.setText("C:/Users/EVO_250/Desktop/BAMPTT/FIFO/output.csv");
 				getContentPane().add(InterFilePath3);
 				
 				// Create Button Open JFileChooser
@@ -338,7 +339,7 @@ public class BAMPTT extends JFrame{
 				
 				final JTextField InterFilePath4 = new JTextField("Select File Path");
 				InterFilePath4.setBounds(25, 375, 400, 25);
-				InterFilePath4.setText("/Users/Earther/Desktop/lotInput.csv");
+				InterFilePath4.setText("C:/Users/EVO_250/Desktop/BAMPTT/FIFO/lot.csv");
 				getContentPane().add(InterFilePath4);
 				
 				// Create Button Open JFileChooser
@@ -406,7 +407,7 @@ public class BAMPTT extends JFrame{
 				
 	}
 	
-	private void processFifo2(String filepath,String outputPath) throws InvalidFormatException, IOException{
+	private void processFifo2(String filepath,String outputPath) throws InvalidFormatException, IOException, ParseException{
 		ArrayList<invoice> invoiceList = new ArrayList<invoice>();
 		readCSV_Oil_Input(filepath, invoiceList);
 		
@@ -419,12 +420,12 @@ public class BAMPTT extends JFrame{
 		sellDetail prevRecord = null;
 		Date prevDate = null;
 		FifoRowDetail rowTMP,prevROW = null;
+			
 		
 		/*
 		 * Build Row for prepare FIFO
 		 */
-		
-		
+				
 		for (sellDetail recordDetail : sum_allData) {
 			if(prevDate==null || recordDetail.getSellDate().compareTo(prevDate)!=0? true:false){
 				//New Date
@@ -540,8 +541,43 @@ public class BAMPTT extends JFrame{
 			}
 			//Add row to list
 			FIFO_ROW_List.add(fifoRowDetail);
-//			fifoRowDetail = new FifoRowDetail();
+
 		}
+		/*
+		 * Add Lot to Row data
+		 */
+		int rowindex = 0;
+		for (invoice currentOilLot : invoiceList) {
+			while(FIFO_ROW_List.get(rowindex).getDateRecord().compareTo(currentOilLot.getLotDate())==-1){
+				//Load next Row data
+				rowindex++;
+			}
+			if(FIFO_ROW_List.get(rowindex).getDateRecord().compareTo(currentOilLot.getLotDate())==0){
+				//Found Same Day
+				if(FIFO_ROW_List.get(rowindex).getLotQuantity()==null){
+					//Insert to exist Row
+					FifoRowDetail loadrowTMP = FIFO_ROW_List.get(rowindex);
+					loadrowTMP.setReciveLotDate(currentOilLot.getLotDate());
+					loadrowTMP.setLotName(currentOilLot.getName());
+					loadrowTMP.setLotQuantity(currentOilLot.getQuantity());
+				}else{
+					//Have to insert New Row
+					FifoRowDetail loadrowTMP = new FifoRowDetail();
+					loadrowTMP.setReciveLotDate(currentOilLot.getLotDate());
+					loadrowTMP.setLotName(currentOilLot.getName());
+					loadrowTMP.setLotQuantity(currentOilLot.getQuantity());
+					FIFO_ROW_List.add(rowindex, loadrowTMP);
+				}
+			}else if(FIFO_ROW_List.get(rowindex).getDateRecord().compareTo(currentOilLot.getLotDate())==1){
+				//Have to insert New Row
+				FifoRowDetail loadrowTMP = new FifoRowDetail();
+				loadrowTMP.setReciveLotDate(currentOilLot.getLotDate());
+				loadrowTMP.setLotName(currentOilLot.getName());
+				loadrowTMP.setLotQuantity(currentOilLot.getQuantity());
+				FIFO_ROW_List.add(rowindex, loadrowTMP);
+			}
+		}
+		
 		
 		writeObjectToExcel(FIFO_ROW_List,outputPath,invoiceList);
 		
@@ -800,8 +836,8 @@ public class BAMPTT extends JFrame{
 						, record[1]
 						, record[2]
 						, record[3]
-						, (new BigDecimal(record[4])).setScale(3, BigDecimal.ROUND_HALF_UP)
-						, (new BigDecimal(record[5])).setScale(3, BigDecimal.ROUND_HALF_UP)
+						, (new BigDecimal(record[4])).setScale(4, BigDecimal.ROUND_HALF_UP)
+						, (new BigDecimal(record[5])).setScale(4, BigDecimal.ROUND_HALF_UP)
 						, flg));
 			}
 
@@ -822,7 +858,7 @@ public class BAMPTT extends JFrame{
 		System.out.println("Done");
 	  }
 	
-	private void readCSV_Oil_Input(String filepath,ArrayList<invoice> oilLotList){
+	private void readCSV_Oil_Input(String filepath,ArrayList<invoice> oilLotList) throws ParseException{
 		
 		String csvFile = filepath;
 		BufferedReader br = null;
@@ -836,10 +872,13 @@ public class BAMPTT extends JFrame{
 
 			        // use comma as separator
 				String[] record = line.split(cvsSplitBy);
-				oilLotList.add(new invoice(Integer.parseInt(record[2])
+
+				oilLotList.add(new invoice(1
 						, record[0]
-						, (new BigDecimal(record[1])).setScale(3, BigDecimal.ROUND_HALF_UP)
+						, record[1]
+						, (new BigDecimal(record[2])).setScale(4, BigDecimal.ROUND_HALF_UP)
 						));
+				
 //				System.out.print(">");
 
 			}
