@@ -4,6 +4,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class FifoRowDetail {
+	
+	Date reciveLotDate;
+	String lotName;
+	BigDecimal lotQuantity;
+	
 	Date	dateRecord;
 	BigDecimal localQuantity;
 	String localInvoiceName;
@@ -31,6 +36,30 @@ public class FifoRowDetail {
 	}
 
 	
+
+	public Date getReciveLotDate() {
+		return reciveLotDate;
+	}
+
+	public void setReciveLotDate(Date reciveLotDate) {
+		this.reciveLotDate = reciveLotDate;
+	}
+
+	public String getLotName() {
+		return lotName;
+	}
+
+	public void setLotName(String lotName) {
+		this.lotName = lotName;
+	}
+
+	public BigDecimal getLotQuantity() {
+		return lotQuantity;
+	}
+
+	public void setLotQuantity(BigDecimal lotQuantity) {
+		this.lotQuantity = lotQuantity;
+	}
 
 	public Date getDateRecord() {
 		return dateRecord;

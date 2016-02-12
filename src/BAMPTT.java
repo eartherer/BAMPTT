@@ -87,10 +87,13 @@ public class BAMPTT extends JFrame{
         Map<Integer, Object[]> data = new TreeMap<Integer, Object[]>();
         int idx=0;
         DateFormat df = new SimpleDateFormat("dd/MM/yy");
-        data.put(idx++,new Object[]{"idx","Date","local_Quantity","Local_Lot","Inter_Quantity","Inter_Lot","Balance Lot"});
+        data.put(idx++,new Object[]{"idx","Recive Date","Lot","Quantity","Date","local_Quantity","Local_Lot","Inter_Quantity","Inter_Lot","Balance Lot"});
         for (FifoRowDetail record : dataList) {
 			data.put(idx, new Object[]{
 				idx,
+				record.getReciveLotDate()==null?"":"Have Date",//Recive Date
+				record.getLotName()==null?"":"LotName",//Lot
+				record.getLotQuantity()==null?"":record.getLotQuantity().toString(),//Quantity
 				df.format(record.getDateRecord()),
 				record.getLocalQuantity().equals(new BigDecimal(-1))?"":record.getLocalQuantity().toString(),
 				record.getLocalInvoiceName(),
