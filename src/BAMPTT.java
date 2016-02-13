@@ -88,19 +88,20 @@ public class BAMPTT extends JFrame{
         Map<Integer, Object[]> data = new TreeMap<Integer, Object[]>();
         int idx=0;
         DateFormat df = new SimpleDateFormat("dd/MM/yy");
-        data.put(idx++,new Object[]{"idx","Recive Date","Lot","Quantity","Date","local_Quantity","Local_Lot","Inter_Quantity","Inter_Lot","Balance Lot"});
+        data.put(idx++,new Object[]{"idx","Recive Date","Lot","Quantity","Date","local_Quantity","Local_Lot","Inter_Quantity","Inter_Lot","Balance Lot","Total Balance Lot"});
         for (FifoRowDetail record : dataList) {
 			data.put(idx, new Object[]{
 				idx,
-				record.getReciveLotDate()==null?"":"Have Date",//Recive Date
-				record.getLotName()==null?"":"LotName",//Lot
+				record.getReciveLotDate()==null?"":df.format(record.getReciveLotDate()),//Recive Date
+				record.getLotName()==null?"":record.getLotName(),//Lot
 				record.getLotQuantity()==null?"":record.getLotQuantity().toString(),//Quantity
 				df.format(record.getDateRecord()),
-				record.getLocalQuantity().equals(new BigDecimal(-1))?"":record.getLocalQuantity().toString(),
+				record.getLocalQuantity().equals(new BigDecimal(-1))?null:record.getLocalQuantity().toString(),
 				record.getLocalInvoiceName(),
 				record.getInterQuantity().equals(new BigDecimal(-1))?"":record.getInterQuantity().toString(),
 				record.getInterInvoiceName(),
-				record.getInvoiceBalance().toString()
+				record.getInvoiceBalance().toString(),
+				record.getTotalInvoiceBalance()==null?"":record.getTotalInvoiceBalance().toString(),//Quantity
 			});
 			idx++;
 		}
@@ -411,6 +412,10 @@ public class BAMPTT extends JFrame{
 		ArrayList<invoice> invoiceList = new ArrayList<invoice>();
 		readCSV_Oil_Input(filepath, invoiceList);
 		
+		ArrayList<invoice> lotList =  new ArrayList<invoice>();
+		readCSV_Oil_Input(filepath, lotList);
+//		Collections.copy(lotList,invoiceList);
+		
 		ArrayList<sellDetail> sum_allData = new ArrayList<>();
 		sum_allData.addAll(sellInter);
 		sum_allData.addAll(sum_sellLocal);
@@ -547,8 +552,12 @@ public class BAMPTT extends JFrame{
 		 * Add Lot to Row data
 		 */
 		int rowindex = 0;
-		for (invoice currentOilLot : invoiceList) {
-			while(FIFO_ROW_List.get(rowindex).getDateRecord().compareTo(currentOilLot.getLotDate())==-1){
+		for (invoice currentOilLot : lotList) {
+			while(true){
+				FifoRowDetail tmpp = FIFO_ROW_List.get(rowindex);
+				int result = tmpp.getDateRecord().compareTo(currentOilLot.getLotDate());
+				if(result!=-1) break;
+//			while(FIFO_ROW_List.get(rowindex).getDateRecord().compareTo(currentOilLot.getLotDate())==-1){
 				//Load next Row data
 				rowindex++;
 			}
@@ -557,12 +566,14 @@ public class BAMPTT extends JFrame{
 				if(FIFO_ROW_List.get(rowindex).getLotQuantity()==null){
 					//Insert to exist Row
 					FifoRowDetail loadrowTMP = FIFO_ROW_List.get(rowindex);
+					loadrowTMP.setDateRecord(currentOilLot.getLotDate());
 					loadrowTMP.setReciveLotDate(currentOilLot.getLotDate());
 					loadrowTMP.setLotName(currentOilLot.getName());
 					loadrowTMP.setLotQuantity(currentOilLot.getQuantity());
 				}else{
 					//Have to insert New Row
 					FifoRowDetail loadrowTMP = new FifoRowDetail();
+					loadrowTMP.setDateRecord(currentOilLot.getLotDate());
 					loadrowTMP.setReciveLotDate(currentOilLot.getLotDate());
 					loadrowTMP.setLotName(currentOilLot.getName());
 					loadrowTMP.setLotQuantity(currentOilLot.getQuantity());
@@ -571,12 +582,34 @@ public class BAMPTT extends JFrame{
 			}else if(FIFO_ROW_List.get(rowindex).getDateRecord().compareTo(currentOilLot.getLotDate())==1){
 				//Have to insert New Row
 				FifoRowDetail loadrowTMP = new FifoRowDetail();
+				loadrowTMP.setDateRecord(currentOilLot.getLotDate());
 				loadrowTMP.setReciveLotDate(currentOilLot.getLotDate());
 				loadrowTMP.setLotName(currentOilLot.getName());
 				loadrowTMP.setLotQuantity(currentOilLot.getQuantity());
 				FIFO_ROW_List.add(rowindex, loadrowTMP);
 			}
+			rowindex++;
 		}
+		/*
+		 * Claculate Total Balance
+		 */
+		BigDecimal totalLot = BigDecimal.ZERO;
+		for (FifoRowDetail ROW : FIFO_ROW_List) {
+			if(ROW.getLotQuantity()!=null){
+				totalLot = totalLot.add(ROW.getLotQuantity());
+			}
+			if(!ROW.getLocalQuantity().equals(new BigDecimal(-1))){
+				totalLot = totalLot.subtract(ROW.getLocalQuantity());
+			}
+			if(!ROW.getInterQuantity().equals(new BigDecimal(-1))){
+				totalLot = totalLot.subtract(ROW.getInterQuantity());
+			}
+			/*
+			 * End ROW set a total balance
+			 */
+			ROW.setTotalInvoiceBalance(totalLot);
+		}
+		
 		
 		
 		writeObjectToExcel(FIFO_ROW_List,outputPath,invoiceList);

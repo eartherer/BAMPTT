@@ -17,6 +17,7 @@ public class FifoRowDetail {
 	BigDecimal invoiceQuantity;
 	BigDecimal interQuantity;
 	BigDecimal invoiceBalance;
+	BigDecimal totalInvoiceBalance;
 	String interInvoiceName;
 	
 
@@ -36,6 +37,14 @@ public class FifoRowDetail {
 	}
 
 	
+
+	public BigDecimal getTotalInvoiceBalance() {
+		return totalInvoiceBalance;
+	}
+
+	public void setTotalInvoiceBalance(BigDecimal totalInvoiceBalance) {
+		this.totalInvoiceBalance = totalInvoiceBalance;
+	}
 
 	public Date getReciveLotDate() {
 		return reciveLotDate;
