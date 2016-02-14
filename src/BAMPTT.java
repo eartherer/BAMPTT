@@ -399,7 +399,7 @@ public class BAMPTT extends JFrame{
 							m1.sumSellLocal();
 							textStatus.append("---->Finish Sum Local Data......\n");repaint();
 							textStatus.append("------------------------------------------------------------------\n");repaint();
-							textStatus.append("Local 	Quantity : "+sumSellDetailList(sellLocal)+"\n");repaint();
+							textStatus.append("Local 	Quantity : "+sumSellDetailList(sum_sellLocal)+"\n");repaint();
 							textStatus.append("Inter 	Quantity : "+sumSellDetailList(sellInter)+"\n");repaint();
 //							textStatus.append("Sum Lot 	Quantity : "+sumSellDetailList()+"\n");repaint();
 							m1.processFifo2(textStatus,InterFilePath4.getText(),InterFilePath3.getText());
