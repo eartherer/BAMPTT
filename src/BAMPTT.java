@@ -494,8 +494,12 @@ public class BAMPTT extends JFrame{
 		int invoiceIndex=0;
 		ArrayList<FifoRowDetail> FIFO_ROW_List = new ArrayList<FifoRowDetail>();
 		invoice currentLot = invoiceList.get(invoiceIndex++);//Load Lot
+		boolean isAdded = true;
+		FifoRowDetail fifoRowDetail = null;
 		
-		for (FifoRowDetail fifoRowDetail : fifoRowDetailsList) {
+		for (FifoRowDetail fifoRowDetailTMP : fifoRowDetailsList) {
+			fifoRowDetail = fifoRowDetailTMP;
+			isAdded = false;
 //			if(FIFO_ROW_List.size()==10) break;
 			if(!fifoRowDetail.getLocalQuantity().equals(new BigDecimal(-1))){ //There is local 
 				while(currentLot.getQuantity().compareTo(fifoRowDetail.getLocalQuantity())==-1){//Lot not enough so insert new row
@@ -559,8 +563,12 @@ public class BAMPTT extends JFrame{
 			}
 			//Add row to list
 			FIFO_ROW_List.add(fifoRowDetail);
+			isAdded = true;
 
 		}
+		
+		if(!isAdded)
+			FIFO_ROW_List.add(fifoRowDetail);
 		/*
 		 * Add Lot to Row data
 		 */
